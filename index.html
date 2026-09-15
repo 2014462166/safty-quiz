@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>安全题库 · 随机测验</title>
+<meta name="description" content="综合类题库（安全）随机抽题测验：单选 200 道、多选 80 道、判断 200 道，共 480 道。">
+<meta name="theme-color" content="#05060f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3.4 5.6 7.9v8c0 6.2 4.4 10.7 10.4 12.5 6-1.8 10.4-6.3 10.4-12.5v-8L16 3.4z' fill='%234dd8ff'/%3E%3Cpath d='M10.8 15.6 14.4 19.6l7-8.1' stroke='%2305060f' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cellipse cx='16' cy='16' rx='15' ry='6' fill='none' stroke='%237c5cff' stroke-width='1.2' opacity='.8' transform='rotate(-28 16 16)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <canvas class="stars" id="stars"></canvas>
+  <div class="bg__nebula bg__nebula--1"></div>
+  <div class="bg__nebula bg__nebula--2"></div>
+  <div class="bg__nebula bg__nebula--3"></div>
+  <div class="bg__horizon"></div>
+  <div class="bg__glowline"></div>
+  <div class="bg__noise"></div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+      <ellipse cx="16" cy="16" rx="15" ry="6" fill="none" stroke="currentColor" stroke-width="1" opacity=".55" transform="rotate(-28 16 16)"/>
+      <circle cx="27.2" cy="9.4" r="1.7" fill="currentColor"/>
+      <path d="M16 3.4 5.6 7.9v8c0 6.2 4.4 10.7 10.4 12.5 6-1.8 10.4-6.3 10.4-12.5v-8L16 3.4z" fill="currentColor" opacity=".92"/>
+      <path d="M10.8 15.6 14.4 19.6l7-8.1" stroke="#05060f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="brand__text">
+      <b>安全题库</b>
+      <span>SAFETY&nbsp;EXAM&nbsp;BANK</span>
+    </div>
+  </div>
+  <div class="topbar__meta">
+    <span class="dot"></span>题库已加载 <b id="bankTotal">0</b> 题
+  </div>
+</header>
+<div class="hazard" aria-hidden="true"></div>
+
+<main class="stage">
+
+  <!-- ============ 01 · 设置 ============ -->
+  <section class="screen is-active" id="screenSetup">
+    <div class="hero">
+      <div class="hero__tag">综合类题库（安全）· 随机抽题</div>
+      <h1 class="hero__title">安全应知应会<em>随机测验</em></h1>
+      <p class="hero__desc">
+        题目来源《综合类题库（安全）》，覆盖安全生产禁令、反违章、脚手架、交通、应急等规范条款。
+        自选题量与题型，系统随机抽题组卷。
+      </p>
+      <div class="hero__stats">
+        <div><b>200</b><span>单选题</span></div>
+        <div><b>80</b><span>多选题</span></div>
+        <div><b>200</b><span>判断题</span></div>
+        <div><b>480</b><span>题库总量</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2><i>01</i>题型范围</h2>
+        <span class="panel__hint">可多选，至少保留一种</span>
+      </div>
+      <div class="chips" id="typeChips">
+        <button class="chip is-on" data-type="single" type="button">
+          <span class="chip__box"></span>单选题<i>200</i>
+        </button>
+        <button class="chip is-on" data-type="multi" type="button">
+          <span class="chip__box"></span>多选题<i>80</i>
+        </button>
+        <button class="chip is-on" data-type="judge" type="button">
+          <span class="chip__box"></span>判断题<i>200</i>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2><i>02</i>题目数量</h2>
+        <span class="panel__hint">题库可用 <b id="poolSize">480</b> 题</span>
+      </div>
+      <div class="quick" id="quickPick">
+        <button data-count="10" type="button">10</button>
+        <button data-count="20" type="button" class="is-on">20</button>
+        <button data-count="30" type="button">30</button>
+        <button data-count="50" type="button">50</button>
+        <button data-count="100" type="button">100</button>
+        <button data-count="all" type="button">全部</button>
+      </div>
+      <input class="range" id="countRange" type="range" min="1" max="480" value="20" aria-label="题目数量">
+      <div class="countRow">
+        <div class="stepper">
+          <button id="minusBtn" type="button" aria-label="减少">−</button>
+          <input id="countInput" type="number" min="1" value="20" aria-label="题目数量">
+          <button id="plusBtn" type="button" aria-label="增加">＋</button>
+        </div>
+        <p class="countRow__tip" id="countTip">将从 480 道题中随机抽取 20 道</p>
+      </div>
+    </div>
+
+    <button class="btn btn--start" id="startBtn" type="button">
+      <span>开始测验</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <p class="kbd-hint">
+      键盘操作：<kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> 选择 ·
+      <kbd>Enter</kbd> 确认 / 下一题 · <kbd>←</kbd><kbd>→</kbd> 切换题目
+    </p>
+  </section>
+
+  <!-- ============ 02 · 答题 ============ -->
+  <section class="screen" id="screenQuiz">
+    <div class="hud">
+      <div class="hud__row">
+        <span class="hud__idx">第 <b id="qIndex">1</b> / <span id="qTotal">20</span> 题</span>
+        <span class="hud__sep"></span>
+        <span class="hud__score">正确 <b class="ok" id="hudOk">0</b> · 错误 <b class="bad" id="hudBad">0</b></span>
+        <span class="hud__timer" id="hudTimer">00:00</span>
+        <button class="hud__quit" id="quitBtn" type="button">退出</button>
+      </div>
+      <div class="rail"><div class="rail__fill" id="railFill"></div></div>
+    </div>
+
+    <article class="qcard" id="qcard">
+      <div class="qcard__meta">
+        <span class="qcard__no" id="qNo">01</span>
+        <span class="tag" id="qType">单选题</span>
+        <span class="src" id="qSrc"></span>
+      </div>
+      <p class="qcard__stem" id="qStem"></p>
+      <div class="opts" id="qOpts"></div>
+      <div class="fb" id="qFeedback" hidden></div>
+    </article>
+
+    <div class="actions">
+      <button class="btn btn--ghost" id="prevBtn" type="button">上一题</button>
+      <button class="btn btn--primary" id="submitBtn" type="button" hidden>确认答案</button>
+      <button class="btn btn--primary" id="nextBtn" type="button">下一题</button>
+    </div>
+  </section>
+
+  <!-- ============ 03 · 结果 ============ -->
+  <section class="screen" id="screenResult">
+    <div class="result">
+      <div class="ring">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="ring__track" cx="100" cy="100" r="86"></circle>
+          <circle class="ring__bar" id="ringBar" cx="100" cy="100" r="86" transform="rotate(-90 100 100)"></circle>
+        </svg>
+        <div class="ring__val"><b id="scorePct">0</b><i>%</i><span>正确率</span></div>
+      </div>
+      <h2 class="result__title" id="resultTitle">测验完成</h2>
+      <p class="result__sub" id="resultSub"></p>
+
+      <div class="stats">
+        <div class="stat stat--ok"><b id="stOk">0</b><span>答对</span></div>
+        <div class="stat stat--bad"><b id="stBad">0</b><span>答错</span></div>
+        <div class="stat"><b id="stBlank">0</b><span>未作答</span></div>
+        <div class="stat"><b id="stTime">00:00</b><span>用时</span></div>
+      </div>
+
+      <div class="review" id="review"></div>
+
+      <div class="actions actions--result">
+        <button class="btn btn--primary" id="againBtn" type="button">再来一组新题</button>
+        <button class="btn btn--ghost" id="retryWrongBtn" type="button" hidden>只练错题</button>
+        <button class="btn btn--ghost" id="homeBtn" type="button">返回首页</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<canvas class="fx" id="fx" aria-hidden="true"></canvas>
+
+<script src="assets/questions.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
