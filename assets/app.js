@@ -4,12 +4,17 @@
 (function () {
   'use strict';
 
-  // 题库注册表：default 随页面加载，其余在切换时按需拉取，避免多余流量
+  // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
+  const VER = '6';
+
+  // 题库注册表：随页面加载的一种，其余在切换时按需拉取，避免多余流量
   const BANKS = {
-    old: { label: '老版题库', file: 'assets/questions-old.js', desc: '综合类题库（安全）打印版' },
-    new: { label: '新版题库', file: 'assets/questions-new.js', desc: '安规整理（横向选项）' }
+    old: { label: '老版题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版' },
+    new: { label: '新版题库', file: 'assets/questions-new.js?v=' + VER, desc: '安规整理（横向选项）' }
   };
   const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
+  // 兼容旧版单题库全局变量（window.QUESTION_BANK）
+  if (!store.old && window.QUESTION_BANK) store.old = window.QUESTION_BANK;
   const bankOf = (key) => (store[key] && store[key].questions) || null;
   let ALL = [];
 
@@ -498,7 +503,7 @@
   // 默认题库：优先使用随页面加载的老版，其次新版
   const initial = bankOf('old') ? 'old' : (bankOf('new') ? 'new' : null);
   if (!initial) {
-    document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请检查 assets/questions-old.js。</p>';
+    document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请强制刷新页面（Ctrl+F5 / 长按刷新）后重试。</p>';
     return;
   }
   bind();
