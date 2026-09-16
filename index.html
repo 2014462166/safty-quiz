@@ -32,41 +32,56 @@
   <!-- ============ 01 · 设置 ============ -->
   <section class="screen is-active" id="screenSetup">
     <div class="hero">
-      <div class="hero__tag">综合类题库（安全）· 随机抽题</div>
+      <div class="hero__tag">双题库 · 随机抽题测验</div>
       <h1 class="hero__title">安全应知应会<em>随机测验</em></h1>
       <p class="hero__desc">
-        题目来源《综合类题库（安全）》，覆盖安全生产禁令、反违章、脚手架、交通、应急等规范条款。
-        自选题量与题型，系统随机抽题组卷。
+        内置两套题库：综合类题库（安全）打印版、安规整理（横向选项）版，覆盖安全生产禁令、反违章、脚手架、交通、应急等规范条款。
+        可切换题库版本、自选题量与题型，系统随机抽题组卷。
       </p>
       <div class="hero__stats">
-        <div><b>200</b><span>单选题</span></div>
-        <div><b>80</b><span>多选题</span></div>
-        <div><b>200</b><span>判断题</span></div>
-        <div><b>480</b><span>题库总量</span></div>
+        <div><b id="hsSingle">200</b><span>单选题</span></div>
+        <div><b id="hsMulti">80</b><span>多选题</span></div>
+        <div><b id="hsJudge">200</b><span>判断题</span></div>
+        <div><b id="hsTotal">480</b><span>题库总量</span></div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel__head">
-        <h2><i>01</i>题型范围</h2>
+        <h2><i>01</i>题库版本</h2>
+        <span class="panel__hint" id="bankHint">老版题库</span>
+      </div>
+      <div class="chips" id="bankChips">
+        <button class="chip is-on" data-bank="old" type="button">
+          <span class="chip__box"></span>老版题库<i>480</i>
+        </button>
+        <button class="chip" data-bank="new" type="button">
+          <span class="chip__box"></span>新版题库<i>245</i>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2><i>02</i>题型范围</h2>
         <span class="panel__hint">可多选，至少保留一种</span>
       </div>
       <div class="chips" id="typeChips">
         <button class="chip is-on" data-type="single" type="button">
-          <span class="chip__box"></span>单选题<i>200</i>
+          <span class="chip__box"></span>单选题<i id="cntSingle">200</i>
         </button>
         <button class="chip is-on" data-type="multi" type="button">
-          <span class="chip__box"></span>多选题<i>80</i>
+          <span class="chip__box"></span>多选题<i id="cntMulti">80</i>
         </button>
         <button class="chip is-on" data-type="judge" type="button">
-          <span class="chip__box"></span>判断题<i>200</i>
+          <span class="chip__box"></span>判断题<i id="cntJudge">200</i>
         </button>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel__head">
-        <h2><i>02</i>题目数量</h2>
+        <h2><i>03</i>题目数量</h2>
         <span class="panel__hint">题库可用 <b id="poolSize">480</b> 题</span>
       </div>
       <div class="quick" id="quickPick">
@@ -94,7 +109,7 @@
     </button>
 
     <p class="kbd-hint">
-      键盘操作：<kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> 选择 ·
+      键盘操作：<kbd>A</kbd>~<kbd>H</kbd> 或 <kbd>1</kbd>~<kbd>8</kbd> 选择 ·
       <kbd>Enter</kbd> 确认 / 下一题 · <kbd>←</kbd><kbd>→</kbd> 切换题目
     </p>
   </section>
@@ -162,7 +177,7 @@
 
 </main>
 
-<script src="assets/questions.js"></script>
+<script src="assets/questions-old.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

@@ -4,7 +4,15 @@
 (function () {
   'use strict';
 
-  const ALL = (window.QUESTION_BANK && window.QUESTION_BANK.questions) || [];
+  // 题库注册表：default 随页面加载，其余在切换时按需拉取，避免多余流量
+  const BANKS = {
+    old: { label: '老版题库', file: 'assets/questions-old.js', desc: '综合类题库（安全）打印版' },
+    new: { label: '新版题库', file: 'assets/questions-new.js', desc: '安规整理（横向选项）' }
+  };
+  const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
+  const bankOf = (key) => (store[key] && store[key].questions) || null;
+  let ALL = [];
+
   const TYPE_NAME = { single: '单选题', multi: '多选题', judge: '判断题' };
   const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge' };
   const JUDGE_OPTIONS = [{ label: 'A', text: '正确' }, { label: 'B', text: '错误' }];
@@ -12,6 +20,7 @@
   const $ = (id) => document.getElementById(id);
 
   const state = {
+    bank: 'old',
     types: new Set(['single', 'multi', 'judge']),
     count: 20,
     quiz: null,
@@ -48,9 +57,9 @@
     if (q.type === 'judge') {
       return { options: JUDGE_OPTIONS, answer: [q.answer === '正确' ? 'A' : 'B'] };
     }
-    // 题库中选项以纯文本数组存储，A/B/C/D 由下标推出
+    // 题库中选项以纯文本数组存储，字母由下标推出（新版题库最多可到 H）
     const options = typeof q.options[0] === 'string'
-      ? q.options.map((text, i) => ({ label: 'ABCD'[i], text }))
+      ? q.options.map((text, i) => ({ label: 'ABCDEFGH'[i], text }))
       : q.options;
     return { options, answer: q.answer.slice().sort() };
   }
@@ -58,6 +67,65 @@
   /* ---------------------------- 设置页 ---------------------------- */
   const pool = () => ALL.filter((q) => state.types.has(q.type));
   const poolSize = () => pool().length;
+
+  // 按需加载题库脚本，未使用到的题库不产生流量
+  function loadBank(key) {
+    return new Promise((resolve, reject) => {
+      if (bankOf(key)) return resolve();
+      const s = document.createElement('script');
+      s.src = BANKS[key].file;
+      s.onload = () => (bankOf(key) ? resolve() : reject(new Error('empty')));
+      s.onerror = () => reject(new Error('network'));
+      document.head.appendChild(s);
+    });
+  }
+
+  function selectBank(key) {
+    if (key === state.bank && ALL.length) return;
+    if (bankOf(key)) return applyBank(key);
+    $('bankHint').textContent = '正在加载' + BANKS[key].label + '…';
+    loadBank(key)
+      .then(() => applyBank(key))
+      .catch(() => {
+        $('bankHint').textContent = BANKS[key].label + '加载失败，请检查网络后重试';
+      });
+  }
+
+  function applyBank(key) {
+    state.bank = key;
+    ALL = bankOf(key) || [];
+    // 该题库缺少的题型自动取消勾选，避免抽到空集合
+    const avail = new Set(ALL.map((q) => q.type));
+    const kept = [...state.types].filter((t) => avail.has(t));
+    state.types = new Set(kept.length ? kept : avail);
+    state.count = 20;
+    renderBankUI();
+    syncSetup();
+  }
+
+  function renderBankUI() {
+    const counts = { single: 0, multi: 0, judge: 0 };
+    ALL.forEach((q) => { counts[q.type]++; });
+
+    [...$('bankChips').children].forEach((b) => {
+      b.classList.toggle('is-on', b.dataset.bank === state.bank);
+      const list = bankOf(b.dataset.bank);
+      b.querySelector('i').textContent = list ? list.length : '…';
+    });
+    [...$('typeChips').children].forEach((b) => {
+      b.classList.toggle('is-on', state.types.has(b.dataset.type));
+    });
+
+    $('bankHint').textContent = `${BANKS[state.bank].label} · ${BANKS[state.bank].desc} · 共 ${ALL.length} 题`;
+    $('bankTotal').textContent = ALL.length;
+    $('hsSingle').textContent = counts.single;
+    $('hsMulti').textContent = counts.multi;
+    $('hsJudge').textContent = counts.judge;
+    $('hsTotal').textContent = ALL.length;
+    $('cntSingle').textContent = counts.single;
+    $('cntMulti').textContent = counts.multi;
+    $('cntJudge').textContent = counts.judge;
+  }
 
   function clampCount(n) {
     const max = Math.max(1, poolSize());
@@ -348,7 +416,10 @@
 
   /* ----------------------------- 事件 ----------------------------- */
   function bind() {
-    $('bankTotal').textContent = ALL.length;
+    $('bankChips').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (btn) selectBank(btn.dataset.bank);
+    });
 
     $('typeChips').addEventListener('click', (e) => {
       const btn = e.target.closest('.chip');
@@ -408,7 +479,8 @@
 
       const rec = state.quiz.records[state.quiz.idx];
       const key = e.key.toUpperCase();
-      const letter = 'ABCD'.includes(key) ? key : ('1234'.includes(key) ? 'ABCD'[Number(key) - 1] : '');
+      const letters = 'ABCDEFGH';
+      const letter = letters.includes(key) ? key : (/^[1-8]$/.test(key) ? letters[Number(key) - 1] : '');
       if (letter && !rec.submitted) {
         const el = $('qOpts').querySelector(`.opt[data-label="${letter}"]`);
         if (el) { e.preventDefault(); onPick(letter); }
@@ -423,10 +495,12 @@
     });
   }
 
-  if (!ALL.length) {
-    document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请检查 assets/questions.js。</p>';
+  // 默认题库：优先使用随页面加载的老版，其次新版
+  const initial = bankOf('old') ? 'old' : (bankOf('new') ? 'new' : null);
+  if (!initial) {
+    document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请检查 assets/questions-old.js。</p>';
     return;
   }
   bind();
-  syncSetup();
+  applyBank(initial);
 })();
