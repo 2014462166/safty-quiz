@@ -9,8 +9,8 @@
 
   // 题库注册表：随页面加载的一种，其余在切换时按需拉取，避免多余流量
   const BANKS = {
-    old: { label: '老版题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版' },
-    new: { label: '新版题库', file: 'assets/questions-new.js?v=' + VER, desc: '安规整理（横向选项）' }
+    old: { label: '老版题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版', total: 480 },
+    new: { label: '新版题库', file: 'assets/questions-new.js?v=' + VER, desc: '安规整理（横向选项）', total: 245 }
   };
   const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
   // 兼容旧版单题库全局变量（window.QUESTION_BANK）
@@ -115,7 +115,7 @@
     [...$('bankChips').children].forEach((b) => {
       b.classList.toggle('is-on', b.dataset.bank === state.bank);
       const list = bankOf(b.dataset.bank);
-      b.querySelector('i').textContent = list ? list.length : '…';
+      b.querySelector('i').textContent = list ? list.length : BANKS[b.dataset.bank].total;
     });
     [...$('typeChips').children].forEach((b) => {
       b.classList.toggle('is-on', state.types.has(b.dataset.type));
