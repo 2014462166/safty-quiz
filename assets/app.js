@@ -356,74 +356,27 @@
   }
 
   /* ----------------------------- 特效 ----------------------------- */
-  // 深空星场：缓速下坠 + 明暗闪烁
-  function starfield() {
-    const cv = $('stars');
-    if (!cv) return;
-    const ctx = cv.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let w = 0, h = 0, stars = [];
-
-    function build() {
-      w = window.innerWidth;
-      h = window.innerHeight;
-      cv.width = w * dpr;
-      cv.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = Math.round(Math.min(230, Math.max(90, (w * h) / 9000)));
-      stars = Array.from({ length: n }, () => {
-        const t = Math.random();
-        return {
-          x: Math.random() * w,
-          y: Math.random() * h,
-          r: Math.random() * 1.5 + .35,
-          a: Math.random() * .55 + .25,
-          tw: Math.random() * Math.PI * 2,
-          tws: .008 + Math.random() * .022,
-          vy: .012 + Math.random() * .05,
-          tint: t < .2 ? '124,92,255' : t < .45 ? '77,216,255' : '255,255,255'
-        };
-      });
-    }
-
-    build();
-    window.addEventListener('resize', build);
-
-    (function frame() {
-      ctx.clearRect(0, 0, w, h);
-      stars.forEach((s) => {
-        if (!reduce) {
-          s.tw += s.tws;
-          s.y += s.vy;
-          if (s.y > h + 2) { s.y = -2; s.x = Math.random() * w; }
-        }
-        const alpha = s.a * (.6 + .4 * Math.sin(s.tw));
-        if (s.r > 1.05) {
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r * 3.4, 0, 6.2832);
-          ctx.fillStyle = `rgba(${s.tint},${(alpha * .1).toFixed(3)})`;
-          ctx.fill();
-        }
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, 6.2832);
-        ctx.fillStyle = `rgba(${s.tint},${alpha.toFixed(3)})`;
-        ctx.fill();
-      });
-      requestAnimationFrame(frame);
-    })();
-  }
-
+  // 星场已改为纯 CSS 合成层动画（见 style.css），此处不再逐帧绘制全屏画布
   function confetti() {
     const cv = $('fx');
     const ctx = cv.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const coarse = window.matchMedia('(pointer:coarse)').matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
+    const w = window.innerWidth, h = window.innerHeight;
     const colors = ['#4dd8ff', '#7c5cff', '#ff4fd8', '#ffffff', '#35e6a8'];
+
+    // 尺寸只设置一次，避免每帧重建画布缓冲区
+    cv.width = w * dpr;
+    cv.height = h * dpr;
+    cv.style.width = w + 'px';
+    cv.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     const parts = [];
     for (let i = 0; i < 130; i++) {
       parts.push({
-        x: Math.random() * innerWidth,
-        y: -30 - Math.random() * innerHeight * .5,
+        x: Math.random() * w,
+        y: -30 - Math.random() * h * .5,
         w: 5 + Math.random() * 7, h: 8 + Math.random() * 10,
         vy: 2.2 + Math.random() * 3.6, vx: -1.3 + Math.random() * 2.6,
         rot: Math.random() * 6.28, vr: -.14 + Math.random() * .28,
@@ -433,9 +386,7 @@
     let t = 0;
     (function loop() {
       t++;
-      cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.clearRect(0, 0, w, h);
       ctx.globalAlpha = Math.max(0, 1 - t / 200);
       parts.forEach((p) => {
         p.x += p.vx; p.y += p.vy; p.vy += .035; p.rot += p.vr;
@@ -447,7 +398,7 @@
         ctx.restore();
       });
       if (t < 200) requestAnimationFrame(loop);
-      else ctx.clearRect(0, 0, innerWidth, innerHeight);
+      else ctx.clearRect(0, 0, w, h);
     })();
   }
 
@@ -532,7 +483,6 @@
     document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请检查 assets/questions.js。</p>';
     return;
   }
-  starfield();
   bind();
   syncSetup();
 })();

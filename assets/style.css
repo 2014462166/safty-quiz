@@ -43,8 +43,54 @@ h1,h2,h3,p{margin:0}
 /* ============================ 深空背景 ============================ */
 .bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:
   radial-gradient(ellipse 120% 80% at 50% -10%,#131a3d 0%,#080a1a 42%,#05060f 100%)}
-.stars{position:absolute;inset:0;width:100%;height:100%}
-.bg__nebula{position:absolute;border-radius:50%;filter:blur(96px);will-change:transform}
+/* 星场：平铺纹理 + transform 位移，只走合成层，不做逐帧重绘 */
+.stars{position:absolute;left:0;right:0;top:0;background-repeat:repeat;pointer-events:none}
+.stars--1{
+  bottom:-240px;
+  background-size:240px 240px;opacity:.85;
+  background-image:
+    radial-gradient(1.2px 1.2px at 18px 34px,rgba(255,255,255,.95),transparent),
+    radial-gradient(1px 1px at 132px 88px,rgba(255,255,255,.7),transparent),
+    radial-gradient(1.1px 1.1px at 74px 168px,rgba(190,225,255,.85),transparent),
+    radial-gradient(1px 1px at 198px 22px,rgba(255,255,255,.6),transparent),
+    radial-gradient(1.3px 1.3px at 210px 140px,rgba(200,220,255,.9),transparent),
+    radial-gradient(1px 1px at 46px 96px,rgba(255,255,255,.55),transparent),
+    radial-gradient(1px 1px at 164px 208px,rgba(255,255,255,.75),transparent),
+    radial-gradient(1.2px 1.2px at 96px 12px,rgba(255,255,255,.8),transparent),
+    radial-gradient(1px 1px at 226px 186px,rgba(180,200,255,.7),transparent),
+    radial-gradient(1px 1px at 8px 214px,rgba(255,255,255,.6),transparent);
+  animation:star-rise-a 150s linear infinite;
+}
+.stars--2{
+  bottom:-320px;
+  background-size:320px 320px;
+  background-image:
+    radial-gradient(1.6px 1.6px at 62px 48px,rgba(255,255,255,1),transparent),
+    radial-gradient(1.4px 1.4px at 244px 176px,rgba(160,215,255,.95),transparent),
+    radial-gradient(1.4px 1.4px at 156px 284px,rgba(255,255,255,.9),transparent),
+    radial-gradient(1.2px 1.2px at 292px 66px,rgba(190,175,255,.9),transparent),
+    radial-gradient(1.3px 1.3px at 34px 232px,rgba(255,255,255,.85),transparent),
+    radial-gradient(1.2px 1.2px at 208px 118px,rgba(255,255,255,.75),transparent),
+    radial-gradient(1.2px 1.2px at 108px 178px,rgba(170,225,255,.8),transparent);
+  animation:star-rise-b 240s linear infinite,star-twinkle 8s ease-in-out infinite alternate;
+}
+.stars--3{
+  bottom:-420px;
+  background-size:420px 420px;opacity:.75;
+  background-image:
+    radial-gradient(2.2px 2.2px at 92px 118px,rgba(255,255,255,.95),transparent),
+    radial-gradient(1.8px 1.8px at 318px 62px,rgba(150,205,255,.85),transparent),
+    radial-gradient(2px 2px at 214px 342px,rgba(255,255,255,.8),transparent),
+    radial-gradient(1.8px 1.8px at 386px 258px,rgba(200,170,255,.8),transparent),
+    radial-gradient(1.6px 1.6px at 42px 300px,rgba(255,255,255,.7),transparent);
+  animation:star-rise-c 340s linear infinite;
+}
+@keyframes star-rise-a{to{transform:translate3d(0,-240px,0)}}
+@keyframes star-rise-b{to{transform:translate3d(0,-320px,0)}}
+@keyframes star-rise-c{to{transform:translate3d(0,-420px,0)}}
+@keyframes star-twinkle{from{opacity:.5}to{opacity:1}}
+
+.bg__nebula{position:absolute;border-radius:50%;filter:blur(96px)}
 .bg__nebula--1{
   width:62vw;height:62vw;left:-20vw;top:-24vw;opacity:.62;
   background:radial-gradient(circle,rgba(124,92,255,.55),transparent 66%);
@@ -66,21 +112,21 @@ h1,h2,h3,p{margin:0}
 
 /* 深空地平线网格 */
 .bg__horizon{
-  position:absolute;left:-25%;right:-25%;bottom:-8%;height:52%;
+  position:absolute;left:-25%;right:-25%;bottom:-10%;height:60%;
   background-image:
     linear-gradient(rgba(120,190,255,.3) 1px,transparent 1px),
     linear-gradient(90deg,rgba(120,190,255,.3) 1px,transparent 1px);
   background-size:74px 48px,74px 48px;
-  transform:perspective(440px) rotateX(70deg);
   transform-origin:bottom center;
   -webkit-mask-image:radial-gradient(ellipse 58% 82% at 50% 100%,#000 4%,transparent 72%);
   mask-image:radial-gradient(ellipse 58% 82% at 50% 100%,#000 4%,transparent 72%);
   opacity:.42;
   animation:horizon 18s linear infinite;
 }
+/* 沿透视后的 Y 轴位移一个网格高度，视觉上等同向前推进，且不触发重绘 */
 @keyframes horizon{
-  from{background-position:0 0,0 0}
-  to{background-position:0 48px,0 0}
+  from{transform:perspective(440px) rotateX(70deg) translateY(0)}
+  to{transform:perspective(440px) rotateX(70deg) translateY(48px)}
 }
 .bg__glowline{
   position:absolute;left:0;right:0;bottom:34%;height:1px;
@@ -526,12 +572,23 @@ kbd{
   .src{max-width:100%}
   .opt{padding:14px 15px;font-size:15px}
   .stats{grid-template-columns:repeat(2,1fr);gap:10px}
-  .actions{position:sticky;bottom:0;padding:12px 0 14px;background:linear-gradient(180deg,transparent,rgba(5,6,15,.94) 34%);backdrop-filter:blur(8px);margin-top:18px}
+  .actions{position:sticky;bottom:0;padding:12px 0 14px;background:linear-gradient(180deg,rgba(5,6,15,0) 0%,rgba(5,6,15,.94) 40%,rgba(5,6,15,.98) 100%);margin-top:18px}
   .actions .btn{flex:1;min-width:0;padding:14px 12px;font-size:14.5px}
   .ring{width:174px;height:174px}
   .ring__val b{font-size:46px}
   .bg__nebula{filter:blur(70px)}
 }
+/* ---- 触屏 / 窄屏：关掉持续动画与实时模糊，避免 GPU 长时间满载发热 ---- */
+@media (max-width:760px),(pointer:coarse){
+  .stars,.bg__nebula,.bg__horizon,.bg__glowline,.dot{animation:none !important}
+  .bg__nebula{filter:blur(60px)}
+  .panel,.qcard,.topbar__meta,.actions{
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+  .panel,.qcard{background:linear-gradient(180deg,rgba(15,19,42,.94),rgba(9,11,26,.92))}
+  .topbar__meta{background:rgba(13,17,38,.88)}
+}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
