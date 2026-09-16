@@ -9,6 +9,7 @@
   const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge' };
   const JUDGE_OPTIONS = [{ label: 'A', text: '正确' }, { label: 'B', text: '错误' }];
   const RING_C = 2 * Math.PI * 86;
+  const HAS_HOVER = window.matchMedia('(hover:hover)').matches;
   const $ = (id) => document.getElementById(id);
 
   const state = {
@@ -143,11 +144,13 @@
       btn.dataset.label = o.label;
       btn.innerHTML = `<span class="opt__k">${o.label}</span><span class="opt__t">${esc(o.text)}</span><span class="opt__flag"></span>`;
       btn.addEventListener('click', () => onPick(o.label));
-      btn.addEventListener('mousemove', (e) => {
-        const r = btn.getBoundingClientRect();
-        btn.style.setProperty('--mx', e.clientX - r.left + 'px');
-        btn.style.setProperty('--my', e.clientY - r.top + 'px');
-      });
+      if (HAS_HOVER) {
+        btn.addEventListener('mousemove', (e) => {
+          const r = btn.getBoundingClientRect();
+          btn.style.setProperty('--mx', e.clientX - r.left + 'px');
+          btn.style.setProperty('--my', e.clientY - r.top + 'px');
+        });
+      }
       box.appendChild(btn);
     });
 
@@ -366,6 +369,7 @@
     const colors = ['#4dd8ff', '#7c5cff', '#ff4fd8', '#ffffff', '#35e6a8'];
 
     // 尺寸只设置一次，避免每帧重建画布缓冲区
+    cv.style.display = 'block';
     cv.width = w * dpr;
     cv.height = h * dpr;
     cv.style.width = w + 'px';
@@ -398,7 +402,10 @@
         ctx.restore();
       });
       if (t < 200) requestAnimationFrame(loop);
-      else ctx.clearRect(0, 0, w, h);
+      else {
+        ctx.clearRect(0, 0, w, h);
+        cv.style.display = 'none';
+      }
     })();
   }
 

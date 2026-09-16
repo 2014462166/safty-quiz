@@ -36,7 +36,7 @@ body{
   overflow-x:hidden;
 }
 b,strong{font-weight:700}
-button{font:inherit;color:inherit;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 h1,h2,h3,p{margin:0}
 ::selection{background:var(--cyan);color:#05060f}
 
@@ -90,20 +90,21 @@ h1,h2,h3,p{margin:0}
 @keyframes star-rise-c{to{transform:translate3d(0,-420px,0)}}
 @keyframes star-twinkle{from{opacity:.5}to{opacity:1}}
 
-.bg__nebula{position:absolute;border-radius:50%;filter:blur(96px)}
+/* 星云：直接由径向渐变本身形成柔和过渡，不再叠加 filter:blur（模糊大图层是手机最大负担） */
+.bg__nebula{position:absolute;border-radius:50%}
 .bg__nebula--1{
-  width:62vw;height:62vw;left:-20vw;top:-24vw;opacity:.62;
-  background:radial-gradient(circle,rgba(124,92,255,.55),transparent 66%);
+  width:66vw;height:66vw;left:-22vw;top:-26vw;opacity:.8;
+  background:radial-gradient(circle,rgba(124,92,255,.5) 0%,rgba(124,92,255,.26) 40%,transparent 72%);
   animation:neb-a 30s var(--ease) infinite alternate;
 }
 .bg__nebula--2{
-  width:56vw;height:56vw;right:-16vw;top:2vw;opacity:.5;
-  background:radial-gradient(circle,rgba(77,216,255,.4),transparent 66%);
+  width:60vw;height:60vw;right:-18vw;top:2vw;opacity:.7;
+  background:radial-gradient(circle,rgba(77,216,255,.38) 0%,rgba(77,216,255,.18) 40%,transparent 72%);
   animation:neb-b 38s var(--ease) infinite alternate;
 }
 .bg__nebula--3{
-  width:74vw;height:46vw;left:14vw;bottom:-26vw;opacity:.38;
-  background:radial-gradient(circle,rgba(255,79,216,.34),transparent 68%);
+  width:78vw;height:48vw;left:14vw;bottom:-26vw;opacity:.5;
+  background:radial-gradient(circle,rgba(255,79,216,.3) 0%,rgba(255,79,216,.14) 40%,transparent 72%);
   animation:neb-c 44s var(--ease) infinite alternate;
 }
 @keyframes neb-a{to{transform:translate3d(6vw,5vw,0) scale(1.14)}}
@@ -131,10 +132,10 @@ h1,h2,h3,p{margin:0}
 .bg__glowline{
   position:absolute;left:0;right:0;bottom:34%;height:1px;
   background:linear-gradient(90deg,transparent,rgba(77,216,255,.55),rgba(124,92,255,.55),transparent);
-  filter:blur(.5px);opacity:.55;
+  opacity:.55;
 }
 .bg__noise{
-  position:absolute;inset:0;opacity:.045;mix-blend-mode:overlay;
+  position:absolute;inset:0;opacity:.04;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .bg::after{
@@ -158,7 +159,7 @@ h1,h2,h3,p{margin:0}
   display:flex;align-items:center;gap:8px;
   font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;color:var(--dim);
   border:1px solid var(--line);border-radius:999px;padding:6px 14px;
-  background:rgba(146,178,255,.06);backdrop-filter:blur(8px);
+  background:rgba(13,17,38,.88);
 }
 .topbar__meta b{color:var(--cyan)}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 2.4s infinite}
@@ -201,7 +202,6 @@ h1,h2,h3,p{margin:0}
   display:block;font-style:normal;
   background:linear-gradient(100deg,#8fe6ff 0%,#c9b6ff 46%,#ff9be8 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 6px 26px rgba(124,92,255,.5));
 }
 .hero__desc{
   margin-top:20px;max-width:64ch;color:var(--dim);font-size:15.5px;
@@ -217,9 +217,7 @@ h1,h2,h3,p{margin:0}
 .hero__stats > div{
   background:linear-gradient(180deg,rgba(16,20,44,.92),rgba(9,11,26,.92));
   padding:18px 20px;display:flex;flex-direction:column;gap:2px;
-  transition:background .3s var(--ease);
 }
-.hero__stats > div:hover{background:linear-gradient(180deg,rgba(28,36,74,.95),rgba(12,15,34,.95))}
 .hero__stats b{font-family:var(--font-mono);font-size:26px;font-weight:700;letter-spacing:-.02em;color:#fff;text-shadow:0 0 22px rgba(77,216,255,.55)}
 .hero__stats span{font-size:12px;color:var(--dim);letter-spacing:.12em}
 @keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -227,9 +225,8 @@ h1,h2,h3,p{margin:0}
 /* ============================ 面板 ============================ */
 .panel{
   border:1px solid var(--line);border-radius:18px;padding:22px 24px 26px;
-  background:linear-gradient(180deg,rgba(146,178,255,.075),rgba(146,178,255,.02));
-  backdrop-filter:blur(14px);
-  box-shadow:0 40px 80px -46px #000,inset 0 1px 0 rgba(255,255,255,.06);
+  background:linear-gradient(180deg,rgba(20,26,54,.88),rgba(11,14,30,.92));
+  box-shadow:0 22px 44px -34px #000,inset 0 1px 0 rgba(255,255,255,.06);
   position:relative;
   animation:up .6s .26s var(--ease) both;
 }
@@ -257,7 +254,6 @@ h1,h2,h3,p{margin:0}
   font-size:14.5px;font-weight:600;letter-spacing:.03em;
   transition:all .25s var(--ease);
 }
-.chip:hover{border-color:var(--line-2);background:var(--card-hi);transform:translateY(-1px)}
 .chip__box{
   width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line-2);
   display:grid;place-items:center;transition:all .2s var(--ease);flex:0 0 17px;
@@ -280,7 +276,6 @@ h1,h2,h3,p{margin:0}
   font-family:var(--font-mono);font-size:14px;font-weight:600;
   transition:all .22s var(--ease);
 }
-.quick button:hover{border-color:var(--line-2);background:var(--card-hi);transform:translateY(-1px)}
 .quick button.is-on{
   background:linear-gradient(180deg,var(--cyan),var(--cyan-2));
   color:#031018;border-color:transparent;font-weight:700;
@@ -391,9 +386,8 @@ kbd{
 .qcard{
   position:relative;border:1px solid var(--line);border-radius:20px;
   padding:30px 32px 32px;
-  background:linear-gradient(180deg,rgba(146,178,255,.085),rgba(146,178,255,.02));
-  backdrop-filter:blur(14px);
-  box-shadow:0 50px 100px -50px #000,inset 0 1px 0 rgba(255,255,255,.07);
+  background:linear-gradient(180deg,rgba(20,26,54,.9),rgba(11,14,30,.94));
+  box-shadow:0 26px 54px -40px #000,inset 0 1px 0 rgba(255,255,255,.06);
   overflow:hidden;
 }
 .qcard::before{
@@ -450,8 +444,14 @@ kbd{
   content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s var(--ease);
   background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(77,216,255,.16),transparent 62%);
 }
-.opt:hover:not(.is-locked){transform:translateY(-2px);border-color:var(--line-2);background:var(--card-hi)}
-.opt:hover:not(.is-locked)::after{opacity:1}
+/* 触屏设备没有真正的 hover，避免点击后样式“粘住”并省掉无谓的重绘 */
+@media (hover:hover){
+  .opt:hover:not(.is-locked){transform:translateY(-2px);border-color:var(--line-2);background:var(--card-hi)}
+  .opt:hover:not(.is-locked)::after{opacity:1}
+  .chip:hover{border-color:var(--line-2);background:var(--card-hi);transform:translateY(-1px)}
+  .quick button:hover{border-color:var(--line-2);background:var(--card-hi);transform:translateY(-1px)}
+  .hero__stats > div:hover{background:linear-gradient(180deg,rgba(28,36,74,.95),rgba(12,15,34,.95))}
+}
 .opt__k{
   flex:0 0 30px;width:30px;height:30px;border-radius:9px;
   display:grid;place-items:center;
@@ -557,7 +557,8 @@ kbd{
 .reviewItem__fix{margin-top:8px;font-size:13px;color:var(--dim);border-left:2px solid var(--line-2);padding-left:10px}
 .reviewEmpty{text-align:center;color:var(--ok);border:1px dashed rgba(53,230,168,.42);border-radius:14px;padding:26px;font-size:14.5px}
 
-.fx{position:fixed;inset:0;z-index:9;pointer-events:none;display:block}
+/* 彩带画布默认不渲染、不占图层，仅结算时短暂启用 */
+.fx{position:fixed;inset:0;z-index:9;pointer-events:none;display:none}
 
 /* ============================ 响应式 ============================ */
 @media (max-width:760px){
@@ -576,17 +577,27 @@ kbd{
   .actions .btn{flex:1;min-width:0;padding:14px 12px;font-size:14.5px}
   .ring{width:174px;height:174px}
   .ring__val b{font-size:46px}
-  .bg__nebula{filter:blur(70px)}
 }
-/* ---- 触屏 / 窄屏：关掉持续动画与实时模糊，避免 GPU 长时间满载发热 ---- */
+
+/* ---- 触屏 / 窄屏：静态化 + 削减图层，优先流畅与省电 ---- */
 @media (max-width:760px),(pointer:coarse){
-  .stars,.bg__nebula,.bg__horizon,.bg__glowline,.dot{animation:none !important}
-  .bg__nebula{filter:blur(60px)}
-  .panel,.qcard,.topbar__meta,.actions{
-    -webkit-backdrop-filter:none;backdrop-filter:none;
-  }
-  .panel,.qcard{background:linear-gradient(180deg,rgba(15,19,42,.94),rgba(9,11,26,.92))}
-  .topbar__meta{background:rgba(13,17,38,.88)}
+  /* 星云并入背景（同一次绘制），叠加层从 5 个降到 2 个：
+     每少一个全屏图层就少一次整屏填充（overdraw） */
+  .bg{background:
+    radial-gradient(66vw 66vw at 0% 0%,rgba(124,92,255,.34),transparent 72%),
+    radial-gradient(60vw 60vw at 100% 6%,rgba(77,216,255,.24),transparent 72%),
+    radial-gradient(ellipse 120% 80% at 50% -10%,#131a3d 0%,#080a1a 42%,#05060f 100%)}
+  /* 地平线（透视+遮罩）与噪点纹理在手机上直接不渲染 */
+  .stars--2,.stars--3,.bg__nebula,.bg__horizon,.bg__noise{display:none}
+  /* 关闭所有持续运行的动画，避免 GPU 一直处于工作状态 */
+  .stars,.bg__glowline,.dot{animation:none !important}
+  /* 入场动画改为直接呈现，减少首屏集中重绘 */
+  .hero__tag,.hero__title,.hero__desc,.hero__stats,.panel,.btn--start,.kbd-hint,
+  .screen.is-active,.fb,.reviewItem{animation:none}
+  /* 收敛大面积阴影、发光与滤镜，降低光栅化开销 */
+  .panel,.qcard{box-shadow:0 12px 24px -20px #000}
+  .hero__stats,.hazard,.rail__fill,.brand__mark{box-shadow:none}
+  .brand__mark,.qcard__no{filter:none}
 }
 
 @media (prefers-reduced-motion:reduce){
