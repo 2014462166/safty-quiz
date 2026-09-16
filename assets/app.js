@@ -9,7 +9,6 @@
   const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge' };
   const JUDGE_OPTIONS = [{ label: 'A', text: '正确' }, { label: 'B', text: '错误' }];
   const RING_C = 2 * Math.PI * 86;
-  const HAS_HOVER = window.matchMedia('(hover:hover)').matches;
   const $ = (id) => document.getElementById(id);
 
   const state = {
@@ -49,7 +48,11 @@
     if (q.type === 'judge') {
       return { options: JUDGE_OPTIONS, answer: [q.answer === '正确' ? 'A' : 'B'] };
     }
-    return { options: q.options, answer: q.answer.slice().sort() };
+    // 题库中选项以纯文本数组存储，A/B/C/D 由下标推出
+    const options = typeof q.options[0] === 'string'
+      ? q.options.map((text, i) => ({ label: 'ABCD'[i], text }))
+      : q.options;
+    return { options, answer: q.answer.slice().sort() };
   }
 
   /* ---------------------------- 设置页 ---------------------------- */
@@ -144,13 +147,6 @@
       btn.dataset.label = o.label;
       btn.innerHTML = `<span class="opt__k">${o.label}</span><span class="opt__t">${esc(o.text)}</span><span class="opt__flag"></span>`;
       btn.addEventListener('click', () => onPick(o.label));
-      if (HAS_HOVER) {
-        btn.addEventListener('mousemove', (e) => {
-          const r = btn.getBoundingClientRect();
-          btn.style.setProperty('--mx', e.clientX - r.left + 'px');
-          btn.style.setProperty('--my', e.clientY - r.top + 'px');
-        });
-      }
       box.appendChild(btn);
     });
 
@@ -310,21 +306,13 @@
     $('stTime').textContent = fmtTime(quiz.elapsed);
 
     const bar = $('ringBar');
-    const color = pct >= 80 ? 'var(--ok)' : pct >= 60 ? 'var(--cyan)' : 'var(--bad)';
-    bar.style.transition = 'none';
+    const color = pct >= 80 ? 'var(--ok)' : pct >= 60 ? 'var(--accent)' : 'var(--bad)';
     bar.style.stroke = color;
-    bar.style.filter = `drop-shadow(0 0 12px ${pct >= 80 ? 'rgba(53,230,168,.6)' : pct >= 60 ? 'rgba(77,216,255,.7)' : 'rgba(255,77,109,.6)'})`;
-    bar.style.strokeDashoffset = RING_C;
+    bar.style.strokeDashoffset = RING_C * (1 - pct / 100);
 
     renderReview(total);
     $('retryWrongBtn').hidden = ok === total;
     showScreen('screenResult');
-
-    requestAnimationFrame(() => {
-      bar.style.transition = 'stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)';
-      bar.style.strokeDashoffset = RING_C * (1 - pct / 100);
-    });
-    if (pct >= 80) confetti();
   }
 
   function renderReview(total) {
@@ -356,57 +344,6 @@
         </div>${fix}
       </div>`;
     }).join('');
-  }
-
-  /* ----------------------------- 特效 ----------------------------- */
-  // 星场已改为纯 CSS 合成层动画（见 style.css），此处不再逐帧绘制全屏画布
-  function confetti() {
-    const cv = $('fx');
-    const ctx = cv.getContext('2d');
-    const coarse = window.matchMedia('(pointer:coarse)').matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
-    const w = window.innerWidth, h = window.innerHeight;
-    const colors = ['#4dd8ff', '#7c5cff', '#ff4fd8', '#ffffff', '#35e6a8'];
-
-    // 尺寸只设置一次，避免每帧重建画布缓冲区
-    cv.style.display = 'block';
-    cv.width = w * dpr;
-    cv.height = h * dpr;
-    cv.style.width = w + 'px';
-    cv.style.height = h + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const parts = [];
-    for (let i = 0; i < 130; i++) {
-      parts.push({
-        x: Math.random() * w,
-        y: -30 - Math.random() * h * .5,
-        w: 5 + Math.random() * 7, h: 8 + Math.random() * 10,
-        vy: 2.2 + Math.random() * 3.6, vx: -1.3 + Math.random() * 2.6,
-        rot: Math.random() * 6.28, vr: -.14 + Math.random() * .28,
-        c: colors[i % colors.length]
-      });
-    }
-    let t = 0;
-    (function loop() {
-      t++;
-      ctx.clearRect(0, 0, w, h);
-      ctx.globalAlpha = Math.max(0, 1 - t / 200);
-      parts.forEach((p) => {
-        p.x += p.vx; p.y += p.vy; p.vy += .035; p.rot += p.vr;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.fillStyle = p.c;
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        ctx.restore();
-      });
-      if (t < 200) requestAnimationFrame(loop);
-      else {
-        ctx.clearRect(0, 0, w, h);
-        cv.style.display = 'none';
-      }
-    })();
   }
 
   /* ----------------------------- 事件 ----------------------------- */
