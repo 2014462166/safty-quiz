@@ -5,12 +5,13 @@
   'use strict';
 
   // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
-  const VER = '6';
+  const VER = '7';
 
-  // 题库注册表：随页面加载的一种，其余在切换时按需拉取，避免多余流量
+  // 题库注册表：首个随页面加载，其余在切换时按需拉取，避免多余流量
   const BANKS = {
-    old: { label: '老版题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版', total: 480 },
-    new: { label: '新版题库', file: 'assets/questions-new.js?v=' + VER, desc: '安规整理（横向选项）', total: 245 }
+    old: { label: '综合类题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版', total: 480 },
+    anquan: { label: '安规题库', file: 'assets/questions-anquan.js?v=' + VER, desc: '安规题库', total: 105 },
+    online: { label: '线上课程', file: 'assets/questions-online.js?v=' + VER, desc: '线上课程题库', total: 281 }
   };
   const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
   // 兼容旧版单题库全局变量（window.QUESTION_BANK）
@@ -72,6 +73,20 @@
   /* ---------------------------- 设置页 ---------------------------- */
   const pool = () => ALL.filter((q) => state.types.has(q.type));
   const poolSize = () => pool().length;
+
+  // 题库按钮按注册表生成，新增题库只需改 BANKS
+  function buildBankChips() {
+    const box = $('bankChips');
+    box.innerHTML = '';
+    Object.keys(BANKS).forEach((key) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip';
+      btn.dataset.bank = key;
+      btn.innerHTML = `<span class="chip__box"></span>${BANKS[key].label}<i>${BANKS[key].total}</i>`;
+      box.appendChild(btn);
+    });
+  }
 
   // 按需加载题库脚本，未使用到的题库不产生流量
   function loadBank(key) {
@@ -507,5 +522,6 @@
     return;
   }
   bind();
+  buildBankChips();
   applyBank(initial);
 })();

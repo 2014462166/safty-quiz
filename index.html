@@ -7,7 +7,7 @@
 <meta name="description" content="综合类题库（安全）随机抽题测验：单选 200 道、多选 80 道、判断 200 道，共 480 道。">
 <meta name="theme-color" content="#0a0f1c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3.4 5.6 7.9v8c0 6.2 4.4 10.7 10.4 12.5 6-1.8 10.4-6.3 10.4-12.5v-8L16 3.4z' fill='%234dd8ff'/%3E%3Cpath d='M10.8 15.6 14.4 19.6l7-8.1' stroke='%230a0f1c' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=6">
+<link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body>
 
@@ -32,11 +32,11 @@
   <!-- ============ 01 · 设置 ============ -->
   <section class="screen is-active" id="screenSetup">
     <div class="hero">
-      <div class="hero__tag">双题库 · 随机抽题测验</div>
+      <div class="hero__tag">三题库 · 随机抽题测验</div>
       <h1 class="hero__title">安全应知应会<em>随机测验</em></h1>
       <p class="hero__desc">
-        内置两套题库：综合类题库（安全）打印版、安规整理（横向选项）版，覆盖安全生产禁令、反违章、脚手架、交通、应急等规范条款。
-        可切换题库版本、自选题量与题型，系统随机抽题组卷。
+        内置三套题库：综合类题库（安全）打印版、安规题库、线上课程题库，覆盖安全生产禁令、反违章、脚手架、交通、应急及线上通用课程内容。
+        可切换题库、自选题量与题型，系统随机抽题组卷。
       </p>
       <div class="hero__stats">
         <div><b id="hsSingle">200</b><span>单选题</span></div>
@@ -48,17 +48,10 @@
 
     <div class="panel">
       <div class="panel__head">
-        <h2><i>01</i>题库版本</h2>
-        <span class="panel__hint" id="bankHint">老版题库</span>
+        <h2><i>01</i>选择题库</h2>
+        <span class="panel__hint" id="bankHint">正在加载…</span>
       </div>
-      <div class="chips" id="bankChips">
-        <button class="chip is-on" data-bank="old" type="button">
-          <span class="chip__box"></span>老版题库<i>480</i>
-        </button>
-        <button class="chip" data-bank="new" type="button">
-          <span class="chip__box"></span>新版题库<i>245</i>
-        </button>
-      </div>
+      <div class="chips" id="bankChips"></div>
     </div>
 
     <div class="panel">
@@ -177,7 +170,7 @@
 
 </main>
 
-<script src="assets/questions-old.js?v=6"></script>
-<script src="assets/app.js?v=6"></script>
+<script src="assets/questions-old.js?v=7"></script>
+<script src="assets/app.js?v=7"></script>
 </body>
 </html>
