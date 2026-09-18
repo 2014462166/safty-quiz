@@ -84,7 +84,7 @@ h1,h2,h3{font-weight:700}
 .hero__title em{display:block;font-style:normal;color:var(--accent)}
 .hero__desc{margin-top:14px;max-width:64ch;color:var(--dim);font-size:15px}
 .hero__stats{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:1px;
   margin-top:26px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
   background:var(--line);
 }
@@ -203,6 +203,7 @@ kbd{
 }
 .tag--multi{background:rgba(124,92,255,.16);color:#b9a6ff}
 .tag--judge{background:rgba(255,79,216,.14);color:#ff9be8}
+.tag--fill{background:rgba(53,230,168,.14);color:#7ef0c4}
 .src{
   font-size:11.5px;color:var(--dim);
   border:1px dashed var(--line-2);border-radius:6px;padding:3px 9px;
@@ -236,6 +237,21 @@ kbd{
 .opt__flag{margin-left:auto;font-family:var(--font-mono);font-size:11px;padding-left:10px;white-space:nowrap}
 .opt.is-ok .opt__flag{color:var(--ok)}
 .opt.is-bad .opt__flag{color:var(--bad)}
+
+/* 填空题输入 */
+.fill{margin-top:4px}
+.fill__input{
+  width:100%;padding:15px 18px;border-radius:11px;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--txt);
+  font-family:var(--font-sans);font-size:16px;line-height:1.6;
+  transition:border-color .15s,background .15s;
+}
+.fill__input::placeholder{color:var(--dim)}
+.fill__input:focus{outline:none;border-color:var(--accent)}
+.fill__input:disabled{opacity:1;-webkit-text-fill-color:var(--txt);cursor:default}
+.fill__input.is-ok{border-color:var(--ok);background:rgba(53,230,168,.12)}
+.fill__input.is-bad{border-color:var(--bad);background:rgba(255,77,109,.12)}
+.fill__hint{margin-top:8px;font-size:12.5px;color:var(--dim)}
 
 .fb{margin-top:20px;border-radius:11px;padding:14px 18px;border:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
 .fb--ok{border-color:var(--ok);background:rgba(53,230,168,.1)}
@@ -300,7 +316,7 @@ kbd{
   .brand__text b{font-size:15px}
   .stage{padding:18px 16px 60px}
   .hero{padding:4px 0 22px}
-  .hero__stats{grid-template-columns:repeat(2,1fr)}
+  .hero__stats > div{padding:12px 14px}
   .panel{padding:16px 14px 18px}
   .qcard{padding:20px 16px 22px}
   .qcard__no{font-size:22px}

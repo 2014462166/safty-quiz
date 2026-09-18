@@ -5,13 +5,12 @@
   'use strict';
 
   // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
-  const VER = '7';
+  const VER = '8';
 
   // 题库注册表：首个随页面加载，其余在切换时按需拉取，避免多余流量
   const BANKS = {
-    old: { label: '综合类题库', file: 'assets/questions-old.js?v=' + VER, desc: '综合类题库（安全）打印版', total: 480 },
     anquan: { label: '安规题库', file: 'assets/questions-anquan.js?v=' + VER, desc: '安规题库', total: 105 },
-    online: { label: '线上课程', file: 'assets/questions-online.js?v=' + VER, desc: '线上课程题库', total: 281 }
+    online: { label: '线上课程', file: 'assets/questions-online.js?v=' + VER, desc: '线上课程题库', total: 356 }
   };
   const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
   // 兼容旧版单题库全局变量（window.QUESTION_BANK）
@@ -19,15 +18,16 @@
   const bankOf = (key) => (store[key] && store[key].questions) || null;
   let ALL = [];
 
-  const TYPE_NAME = { single: '单选题', multi: '多选题', judge: '判断题' };
-  const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge' };
+  const TYPE_ORDER = ['single', 'multi', 'judge', 'fill'];
+  const TYPE_NAME = { single: '单选题', multi: '多选题', judge: '判断题', fill: '填空题' };
+  const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge', fill: 'tag tag--fill' };
   const JUDGE_OPTIONS = [{ label: 'A', text: '正确' }, { label: 'B', text: '错误' }];
   const RING_C = 2 * Math.PI * 86;
   const $ = (id) => document.getElementById(id);
 
   const state = {
-    bank: 'old',
-    types: new Set(['single', 'multi', 'judge']),
+    bank: 'anquan',
+    types: new Set(TYPE_ORDER),
     count: 20,
     quiz: null,
     timer: null
@@ -35,6 +35,12 @@
 
   /* ----------------------------- 工具 ----------------------------- */
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // 填空题答案比对：忽略空白与标点，避免因标点差异误判
+  const normText = (s) => String(s)
+    .replace(/[\s\u3000]/g, '')
+    .replace(/[，。、；：？！,.;:?!"'“”‘’（）()《》〈〉【】\[\]·\-—_/\\]/g, '')
+    .toLowerCase();
 
   function shuffle(arr) {
     const a = arr.slice();
@@ -55,7 +61,9 @@
   }
 
   function stemHtml(stem) {
-    return esc(stem).replace(/[（(]\s*[）)]/g, '<span class="blank">（　）</span>');
+    return esc(stem)
+      .replace(/[（(]\s*[）)]/g, '<span class="blank">（　）</span>')
+      .replace(/_{2,}/g, '<span class="blank">＿＿</span>');
   }
 
   /* --------------------------- 题目规范化 --------------------------- */
@@ -63,7 +71,10 @@
     if (q.type === 'judge') {
       return { options: JUDGE_OPTIONS, answer: [q.answer === '正确' ? 'A' : 'B'] };
     }
-    // 题库中选项以纯文本数组存储，字母由下标推出（新版题库最多可到 H）
+    if (q.type === 'fill') {
+      return { options: [], answer: [] };
+    }
+    // 题库中选项以纯文本数组存储，字母由下标推出（最多可到 H）
     const options = typeof q.options[0] === 'string'
       ? q.options.map((text, i) => ({ label: 'ABCDEFGH'[i], text }))
       : q.options;
@@ -86,6 +97,30 @@
       btn.innerHTML = `<span class="chip__box"></span>${BANKS[key].label}<i>${BANKS[key].total}</i>`;
       box.appendChild(btn);
     });
+  }
+
+  const countByType = (list) => list.reduce((a, q) => (a[q.type] = (a[q.type] || 0) + 1, a), {});
+
+  // 题型按钮按当前题库实际拥有的题型生成（没有的题型不显示）
+  function buildTypeChips(counts) {
+    const box = $('typeChips');
+    box.innerHTML = '';
+    TYPE_ORDER.filter((t) => counts[t]).forEach((t) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip';
+      btn.dataset.type = t;
+      btn.innerHTML = `<span class="chip__box"></span>${TYPE_NAME[t]}<i>${counts[t]}</i>`;
+      box.appendChild(btn);
+    });
+  }
+
+  // 首屏统计按当前题库生成
+  function buildHeroStats(counts, total) {
+    const box = $('heroStats');
+    box.innerHTML = TYPE_ORDER.filter((t) => counts[t])
+      .map((t) => `<div><b>${counts[t]}</b><span>${TYPE_NAME[t]}</span></div>`).join('')
+      + `<div><b>${total}</b><span>题库总量</span></div>`;
   }
 
   // 按需加载题库脚本，未使用到的题库不产生流量
@@ -119,13 +154,13 @@
     const kept = [...state.types].filter((t) => avail.has(t));
     state.types = new Set(kept.length ? kept : avail);
     state.count = 20;
+    buildTypeChips(countByType(ALL));
     renderBankUI();
     syncSetup();
   }
 
   function renderBankUI() {
-    const counts = { single: 0, multi: 0, judge: 0 };
-    ALL.forEach((q) => { counts[q.type]++; });
+    const counts = countByType(ALL);
 
     [...$('bankChips').children].forEach((b) => {
       b.classList.toggle('is-on', b.dataset.bank === state.bank);
@@ -134,17 +169,12 @@
     });
     [...$('typeChips').children].forEach((b) => {
       b.classList.toggle('is-on', state.types.has(b.dataset.type));
+      b.querySelector('i').textContent = counts[b.dataset.type] || 0;
     });
 
     $('bankHint').textContent = `${BANKS[state.bank].label} · ${BANKS[state.bank].desc} · 共 ${ALL.length} 题`;
     $('bankTotal').textContent = ALL.length;
-    $('hsSingle').textContent = counts.single;
-    $('hsMulti').textContent = counts.multi;
-    $('hsJudge').textContent = counts.judge;
-    $('hsTotal').textContent = ALL.length;
-    $('cntSingle').textContent = counts.single;
-    $('cntMulti').textContent = counts.multi;
-    $('cntJudge').textContent = counts.judge;
+    buildHeroStats(counts, ALL.length);
   }
 
   function clampCount(n) {
@@ -184,7 +214,7 @@
     state.quiz = {
       list: picked,
       idx: 0,
-      records: picked.map(() => ({ picked: [], submitted: false, correct: false })),
+      records: picked.map(() => ({ picked: [], text: '', submitted: false, correct: false })),
       startedAt: Date.now(),
       elapsed: 0
     };
@@ -228,15 +258,29 @@
 
     const box = $('qOpts');
     box.innerHTML = '';
-    options.forEach((o) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'opt';
-      btn.dataset.label = o.label;
-      btn.innerHTML = `<span class="opt__k">${o.label}</span><span class="opt__t">${esc(o.text)}</span><span class="opt__flag"></span>`;
-      btn.addEventListener('click', () => onPick(o.label));
-      box.appendChild(btn);
-    });
+    if (q.type === 'fill') {
+      const wrap = document.createElement('div');
+      wrap.className = 'fill';
+      wrap.innerHTML = '<input class="fill__input" id="fillInput" type="text" autocomplete="off" spellcheck="false" placeholder="在此输入答案后点「确认答案」">';
+      box.appendChild(wrap);
+      const inp = wrap.querySelector('.fill__input');
+      inp.value = rec.text || '';
+      inp.disabled = !!rec.submitted;
+      inp.addEventListener('input', () => { rec.text = inp.value; renderActions(); });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); submitAnswer(); }
+      });
+    } else {
+      options.forEach((o) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'opt';
+        btn.dataset.label = o.label;
+        btn.innerHTML = `<span class="opt__k">${o.label}</span><span class="opt__t">${esc(o.text)}</span><span class="opt__flag"></span>`;
+        btn.addEventListener('click', () => onPick(o.label));
+        box.appendChild(btn);
+      });
+    }
 
     if (rec.submitted) paintResult(q, rec, options, answer, false);
     else {
@@ -244,6 +288,10 @@
       box.querySelectorAll('.opt').forEach((el) => {
         el.classList.toggle('is-picked', rec.picked.includes(el.dataset.label));
       });
+    }
+    // 桌面端自动聚焦输入框；触屏端不自动弹键盘，避免打断浏览
+    if (q.type === 'fill' && !rec.submitted && !window.matchMedia('(pointer:coarse)').matches) {
+      box.querySelector('.fill__input').focus();
     }
     renderActions();
   }
@@ -256,8 +304,9 @@
 
     $('prevBtn').disabled = quiz.idx === 0;
     const submit = $('submitBtn');
-    submit.hidden = !(q.type === 'multi' && !rec.submitted);
-    submit.disabled = !rec.picked.length;
+    const needSubmit = (q.type === 'multi' || q.type === 'fill') && !rec.submitted;
+    submit.hidden = !needSubmit;
+    submit.disabled = q.type === 'fill' ? !String(rec.text || '').trim() : !rec.picked.length;
     const next = $('nextBtn');
     next.textContent = isLast ? '查看结果' : '下一题';
     next.className = 'btn ' + (rec.submitted || isLast ? 'btn--primary' : 'btn--ghost');
@@ -288,8 +337,13 @@
   }
 
   function submitAnswer() {
-    const rec = state.quiz.records[state.quiz.idx];
-    if (!rec.picked.length) return;
+    const quiz = state.quiz;
+    const q = quiz.list[quiz.idx];
+    const rec = quiz.records[quiz.idx];
+    if (rec.submitted) return;
+    if (q.type === 'fill') {
+      if (!String(rec.text || '').trim()) return;
+    } else if (!rec.picked.length) return;
     judge();
   }
 
@@ -299,7 +353,9 @@
     const rec = quiz.records[quiz.idx];
     const { options, answer } = normalize(q);
     rec.submitted = true;
-    rec.correct = rec.picked.slice().sort().join('') === answer.join('');
+    rec.correct = q.type === 'fill'
+      ? normText(rec.text || '') === normText(q.answer)
+      : rec.picked.slice().sort().join('') === answer.join('');
     paintResult(q, rec, options, answer, true);
     updateHud();
     renderActions();
@@ -307,6 +363,11 @@
 
   function paintResult(q, rec, options, answer, animate) {
     const box = $('qOpts');
+    const fillInput = box.querySelector('.fill__input');
+    if (fillInput) {
+      fillInput.disabled = true;
+      fillInput.classList.add(rec.correct ? 'is-ok' : 'is-bad');
+    }
     box.querySelectorAll('.opt').forEach((el) => {
       const L = el.dataset.label;
       const isRight = answer.includes(L);
@@ -330,17 +391,24 @@
     fb.className = 'fb ' + (rec.correct ? 'fb--ok' : 'fb--bad');
     if (animate === false) fb.style.animation = 'none';
 
-    const rightTxt = answer
-      .map((L) => (options.find((o) => o.label === L) || {}).text)
-      .join(' / ');
+    const isChoice = q.type === 'single' || q.type === 'multi';
+    const rightTxt = isChoice
+      ? answer.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ')
+      : q.answer;
     let note = '';
     if (q.type === 'judge' && q.fix) note = `<div class="fb__note">更正要点：${esc(q.fix)}</div>`;
+
+    const head = rec.correct
+      ? '回答正确'
+      : isChoice
+        ? '回答错误，正确答案：<b>' + esc(answer.join('')) + '</b>'
+        : '回答错误，参考答案：<b>' + esc(q.answer) + '</b>';
 
     fb.innerHTML = `
       <span class="fb__icon">${rec.correct ? '✓' : '✕'}</span>
       <div class="fb__body">
-        ${rec.correct ? '回答正确' : '回答错误，正确答案：<b>' + esc(answer.join('')) + '</b>'}
-        ${q.type === 'multi' || !rec.correct ? `<div class="fb__note">正确选项：${esc(rightTxt)}</div>` : ''}
+        ${head}
+        ${(q.type === 'multi' || q.type === 'fill' || !rec.correct) ? `<div class="fb__note">${isChoice ? '正确选项' : '参考答案'}：${esc(rightTxt)}</div>` : ''}
         ${note}
       </div>`;
   }
@@ -418,17 +486,23 @@
 
     wrap.innerHTML = `<div class="review__head">错题回顾 · ${wrong.length} 题</div>` + wrong.map(({ r, q, i }) => {
       const { options, answer } = normalize(q);
-      const rightTxt = answer.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ');
-      const youTxt = r.submitted
-        ? r.picked.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ')
-        : '未作答';
+      const isChoice = q.type === 'single' || q.type === 'multi';
+      const rightTxt = isChoice
+        ? answer.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ')
+        : q.answer;
+      let youTxt = '未作答';
+      if (r.submitted) {
+        youTxt = isChoice
+          ? r.picked.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ')
+          : (r.text || '').trim() || '（空）';
+      }
       const fix = q.type === 'judge' && q.fix ? `<div class="reviewItem__fix">更正要点：${esc(q.fix)}</div>` : '';
       return `<div class="reviewItem ${r.submitted ? '' : 'reviewItem--blank'}">
         <div class="reviewItem__top"><span>第 ${pad2(i + 1)} 题</span><span>${TYPE_NAME[q.type]}</span></div>
         <div class="reviewItem__stem">${stemHtml(q.stem)}</div>
         <div class="reviewItem__ans">
           <i>你的答案：<span class="you">${esc(youTxt)}</span></i>
-          <i>正确答案：<span class="right">${esc(rightTxt)}</span></i>
+          <i>${isChoice ? '正确答案' : '参考答案'}：<span class="right">${esc(rightTxt)}</span></i>
         </div>${fix}
       </div>`;
     }).join('');
@@ -515,8 +589,8 @@
     });
   }
 
-  // 默认题库：优先使用随页面加载的老版，其次新版
-  const initial = bankOf('old') ? 'old' : (bankOf('new') ? 'new' : null);
+  // 默认题库：注册表中第一个已随页面加载好数据的题库
+  const initial = Object.keys(BANKS).find((k) => bankOf(k)) || null;
   if (!initial) {
     document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请强制刷新页面（Ctrl+F5 / 长按刷新）后重试。</p>';
     return;

@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>安全题库 · 随机测验</title>
-<meta name="description" content="综合类题库（安全）随机抽题测验：单选 200 道、多选 80 道、判断 200 道，共 480 道。">
+<meta name="description" content="安规题库 / 线上课程题库随机抽题测验：单选、多选、判断、填空，可自选题量与题型。">
 <meta name="theme-color" content="#0a0f1c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3.4 5.6 7.9v8c0 6.2 4.4 10.7 10.4 12.5 6-1.8 10.4-6.3 10.4-12.5v-8L16 3.4z' fill='%234dd8ff'/%3E%3Cpath d='M10.8 15.6 14.4 19.6l7-8.1' stroke='%230a0f1c' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link rel="stylesheet" href="assets/style.css?v=8">
 </head>
 <body>
 
@@ -32,18 +32,13 @@
   <!-- ============ 01 · 设置 ============ -->
   <section class="screen is-active" id="screenSetup">
     <div class="hero">
-      <div class="hero__tag">三题库 · 随机抽题测验</div>
+      <div class="hero__tag">安全应知应会 · 随机抽题测验</div>
       <h1 class="hero__title">安全应知应会<em>随机测验</em></h1>
       <p class="hero__desc">
-        内置三套题库：综合类题库（安全）打印版、安规题库、线上课程题库，覆盖安全生产禁令、反违章、脚手架、交通、应急及线上通用课程内容。
+        内置两套题库：安规题库（单选 / 多选 / 判断）、线上课程题库（单选 / 多选 / 判断 / 填空）。
         可切换题库、自选题量与题型，系统随机抽题组卷。
       </p>
-      <div class="hero__stats">
-        <div><b id="hsSingle">200</b><span>单选题</span></div>
-        <div><b id="hsMulti">80</b><span>多选题</span></div>
-        <div><b id="hsJudge">200</b><span>判断题</span></div>
-        <div><b id="hsTotal">480</b><span>题库总量</span></div>
-      </div>
+      <div class="hero__stats" id="heroStats"></div>
     </div>
 
     <div class="panel">
@@ -59,17 +54,7 @@
         <h2><i>02</i>题型范围</h2>
         <span class="panel__hint">可多选，至少保留一种</span>
       </div>
-      <div class="chips" id="typeChips">
-        <button class="chip is-on" data-type="single" type="button">
-          <span class="chip__box"></span>单选题<i id="cntSingle">200</i>
-        </button>
-        <button class="chip is-on" data-type="multi" type="button">
-          <span class="chip__box"></span>多选题<i id="cntMulti">80</i>
-        </button>
-        <button class="chip is-on" data-type="judge" type="button">
-          <span class="chip__box"></span>判断题<i id="cntJudge">200</i>
-        </button>
-      </div>
+      <div class="chips" id="typeChips"></div>
     </div>
 
     <div class="panel">
@@ -170,7 +155,7 @@
 
 </main>
 
-<script src="assets/questions-old.js?v=7"></script>
-<script src="assets/app.js?v=7"></script>
+<script src="assets/questions-anquan.js?v=8"></script>
+<script src="assets/app.js?v=8"></script>
 </body>
 </html>
