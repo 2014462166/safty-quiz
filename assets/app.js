@@ -5,7 +5,7 @@
   'use strict';
 
   // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
-  const VER = '10';
+  const VER = '11';
 
   // 题库注册表：首个随页面加载，其余在切换时按需拉取，避免多余流量
   // merge 表示「总题库」由其它题库在运行时合并而成，不额外占用流量
@@ -73,14 +73,13 @@
     if (q.type === 'judge') {
       return { options: JUDGE_OPTIONS, answer: [q.answer === '正确' ? 'A' : 'B'] };
     }
-    if (q.type === 'fill') {
-      return { options: [], answer: [] };
-    }
-    // 题库中选项以纯文本数组存储，字母由下标推出（最多可到 H）
+    // 填空 / 简答等无选项题型
+    if (!q.options || !q.options.length) return { options: [], answer: [] };
+    // 选项以纯文本数组存储，字母由下标推出（最多可到 H）
     const options = typeof q.options[0] === 'string'
       ? q.options.map((text, i) => ({ label: 'ABCDEFGH'[i], text }))
       : q.options;
-    return { options, answer: q.answer.slice().sort() };
+    return { options, answer: (q.answer || []).slice().sort() };
   }
 
   /* ---------------------------- 设置页 ---------------------------- */
