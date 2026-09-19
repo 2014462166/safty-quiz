@@ -5,12 +5,14 @@
   'use strict';
 
   // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
-  const VER = '8';
+  const VER = '9';
 
   // 题库注册表：首个随页面加载，其余在切换时按需拉取，避免多余流量
+  // merge 表示「总题库」由其它题库在运行时合并而成，不额外占用流量
   const BANKS = {
-    anquan: { label: '安规题库', file: 'assets/questions-anquan.js?v=' + VER, desc: '安规题库', total: 105 },
-    online: { label: '线上课程', file: 'assets/questions-online.js?v=' + VER, desc: '线上课程题库', total: 356 }
+    anquan: { label: '安规题库', file: 'assets/questions-anquan.js?v=' + VER, desc: '安规题库', total: 108 },
+    online: { label: '线上课程', file: 'assets/questions-online.js?v=' + VER, desc: '线上课程题库', total: 366 },
+    all: { label: '总题库', desc: '安规题库 + 线上课程题库', total: 474, merge: ['anquan', 'online'] }
   };
   const store = (window.QUESTION_BANKS = window.QUESTION_BANKS || {});
   // 兼容旧版单题库全局变量（window.QUESTION_BANK）
@@ -18,9 +20,9 @@
   const bankOf = (key) => (store[key] && store[key].questions) || null;
   let ALL = [];
 
-  const TYPE_ORDER = ['single', 'multi', 'judge', 'fill'];
-  const TYPE_NAME = { single: '单选题', multi: '多选题', judge: '判断题', fill: '填空题' };
-  const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge', fill: 'tag tag--fill' };
+  const TYPE_ORDER = ['single', 'multi', 'judge', 'fill', 'short'];
+  const TYPE_NAME = { single: '单选题', multi: '多选题', judge: '判断题', fill: '填空题', short: '简答题' };
+  const TYPE_TAG = { single: 'tag', multi: 'tag tag--multi', judge: 'tag tag--judge', fill: 'tag tag--fill', short: 'tag tag--short' };
   const JUDGE_OPTIONS = [{ label: 'A', text: '正确' }, { label: 'B', text: '错误' }];
   const RING_C = 2 * Math.PI * 86;
   const $ = (id) => document.getElementById(id);
@@ -123,8 +125,8 @@
       + `<div><b>${total}</b><span>题库总量</span></div>`;
   }
 
-  // 按需加载题库脚本，未使用到的题库不产生流量
-  function loadBank(key) {
+  // 按需加载题库脚本：merge 型题库会并行加载其依赖题库
+  function loadOne(key) {
     return new Promise((resolve, reject) => {
       if (bankOf(key)) return resolve();
       const s = document.createElement('script');
@@ -135,9 +137,28 @@
     });
   }
 
+  // 取题库数据；merge 型题库在依赖齐全时合并（结果缓存，避免重复拼接）
+  const merged = {};
+  function readyBank(key) {
+    const b = BANKS[key];
+    if (!b.merge) return bankOf(key);
+    const lists = b.merge.map(bankOf);
+    if (!lists.every(Boolean)) return null;
+    if (!merged[key]) merged[key] = lists.reduce((a, l) => a.concat(l), []);
+    return merged[key];
+  }
+
+  function loadBank(key) {
+    if (readyBank(key)) return Promise.resolve();
+    const deps = BANKS[key].merge || [key];
+    return Promise.all(deps.map(loadOne)).then(() => {
+      if (!readyBank(key)) throw new Error('empty');
+    });
+  }
+
   function selectBank(key) {
     if (key === state.bank && ALL.length) return;
-    if (bankOf(key)) return applyBank(key);
+    if (readyBank(key)) return applyBank(key);
     $('bankHint').textContent = '正在加载' + BANKS[key].label + '…';
     loadBank(key)
       .then(() => applyBank(key))
@@ -148,7 +169,7 @@
 
   function applyBank(key) {
     state.bank = key;
-    ALL = bankOf(key) || [];
+    ALL = readyBank(key) || [];
     // 该题库缺少的题型自动取消勾选，避免抽到空集合
     const avail = new Set(ALL.map((q) => q.type));
     const kept = [...state.types].filter((t) => avail.has(t));
@@ -164,7 +185,7 @@
 
     [...$('bankChips').children].forEach((b) => {
       b.classList.toggle('is-on', b.dataset.bank === state.bank);
-      const list = bankOf(b.dataset.bank);
+      const list = readyBank(b.dataset.bank);
       b.querySelector('i').textContent = list ? list.length : BANKS[b.dataset.bank].total;
     });
     [...$('typeChips').children].forEach((b) => {
@@ -214,7 +235,7 @@
     state.quiz = {
       list: picked,
       idx: 0,
-      records: picked.map(() => ({ picked: [], text: '', submitted: false, correct: false })),
+      records: picked.map(() => ({ picked: [], text: '', revealed: false, submitted: false, correct: false })),
       startedAt: Date.now(),
       elapsed: 0
     };
@@ -270,6 +291,29 @@
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); submitAnswer(); }
       });
+    } else if (q.type === 'short') {
+      const wrap = document.createElement('div');
+      wrap.className = 'short';
+      wrap.innerHTML = `
+        <button class="btn btn--primary short__show" type="button">查看参考答案</button>
+        <div class="short__answer" hidden>
+          <div class="short__label">参考答案</div>
+          <div class="short__text">${esc(q.answer)}</div>
+          <div class="short__ask">对照参考答案，这道题你答对了吗？</div>
+          <div class="short__judge">
+            <button class="btn btn--ok" data-correct="1" type="button">答对了</button>
+            <button class="btn btn--bad" data-correct="0" type="button">答错了</button>
+          </div>
+        </div>`;
+      box.appendChild(wrap);
+      wrap.querySelector('.short__show').addEventListener('click', revealShort);
+      wrap.querySelectorAll('.short__judge button').forEach((b) => {
+        b.addEventListener('click', () => selfJudge(b.dataset.correct === '1'));
+      });
+      if (rec.revealed || rec.submitted) {
+        wrap.querySelector('.short__show').hidden = true;
+        wrap.querySelector('.short__answer').hidden = false;
+      }
     } else {
       options.forEach((o) => {
         const btn = document.createElement('button');
@@ -336,6 +380,24 @@
     judge();
   }
 
+  // 简答题：展开参考答案
+  function revealShort() {
+    const wrap = $('qOpts').querySelector('.short');
+    if (!wrap) return;
+    wrap.querySelector('.short__show').hidden = true;
+    wrap.querySelector('.short__answer').hidden = false;
+    const rec = state.quiz.records[state.quiz.idx];
+    rec.revealed = true;
+  }
+
+  // 简答题：自评对错（无标准答案可自动判分）
+  function selfJudge(ok) {
+    const rec = state.quiz.records[state.quiz.idx];
+    if (rec.submitted) return;
+    revealShort();
+    judge(ok);
+  }
+
   function submitAnswer() {
     const quiz = state.quiz;
     const q = quiz.list[quiz.idx];
@@ -347,15 +409,18 @@
     judge();
   }
 
-  function judge() {
+  function judge(okOverride) {
     const quiz = state.quiz;
     const q = quiz.list[quiz.idx];
     const rec = quiz.records[quiz.idx];
     const { options, answer } = normalize(q);
+    if (q.type === 'short' && typeof okOverride !== 'boolean') return;
     rec.submitted = true;
-    rec.correct = q.type === 'fill'
-      ? normText(rec.text || '') === normText(q.answer)
-      : rec.picked.slice().sort().join('') === answer.join('');
+    rec.correct = typeof okOverride === 'boolean'
+      ? okOverride
+      : q.type === 'fill'
+        ? normText(rec.text || '') === normText(q.answer)
+        : rec.picked.slice().sort().join('') === answer.join('');
     paintResult(q, rec, options, answer, true);
     updateHud();
     renderActions();
@@ -367,6 +432,16 @@
     if (fillInput) {
       fillInput.disabled = true;
       fillInput.classList.add(rec.correct ? 'is-ok' : 'is-bad');
+    }
+    const shortBox = box.querySelector('.short');
+    if (shortBox) {
+      shortBox.querySelector('.short__show').hidden = true;
+      shortBox.querySelector('.short__answer').hidden = false;
+      shortBox.querySelectorAll('.short__judge button').forEach((b) => {
+        const picked = (b.dataset.correct === '1') === rec.correct;
+        b.classList.toggle('is-on', picked);
+        b.disabled = true;
+      });
     }
     box.querySelectorAll('.opt').forEach((el) => {
       const L = el.dataset.label;
@@ -398,17 +473,19 @@
     let note = '';
     if (q.type === 'judge' && q.fix) note = `<div class="fb__note">更正要点：${esc(q.fix)}</div>`;
 
-    const head = rec.correct
-      ? '回答正确'
-      : isChoice
-        ? '回答错误，正确答案：<b>' + esc(answer.join('')) + '</b>'
-        : '回答错误，参考答案：<b>' + esc(q.answer) + '</b>';
+    const head = q.type === 'short'
+      ? (rec.correct ? '已计入：答对' : '已计入：答错')
+      : rec.correct
+        ? '回答正确'
+        : isChoice
+          ? '回答错误，正确答案：<b>' + esc(answer.join('')) + '</b>'
+          : '回答错误，参考答案：<b>' + esc(q.answer) + '</b>';
 
     fb.innerHTML = `
       <span class="fb__icon">${rec.correct ? '✓' : '✕'}</span>
       <div class="fb__body">
         ${head}
-        ${(q.type === 'multi' || q.type === 'fill' || !rec.correct) ? `<div class="fb__note">${isChoice ? '正确选项' : '参考答案'}：${esc(rightTxt)}</div>` : ''}
+        ${(q.type === 'multi' || q.type === 'fill' || q.type === 'short' || !rec.correct) ? `<div class="fb__note">${isChoice ? '正确选项' : '参考答案'}：${esc(rightTxt)}</div>` : ''}
         ${note}
       </div>`;
   }
@@ -492,9 +569,9 @@
         : q.answer;
       let youTxt = '未作答';
       if (r.submitted) {
-        youTxt = isChoice
-          ? r.picked.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ')
-          : (r.text || '').trim() || '（空）';
+        if (isChoice) youTxt = r.picked.map((L) => (options.find((o) => o.label === L) || {}).text).join(' / ');
+        else if (q.type === 'fill') youTxt = (r.text || '').trim() || '（空）';
+        else youTxt = r.correct ? '自评：答对' : '自评：答错';
       }
       const fix = q.type === 'judge' && q.fix ? `<div class="reviewItem__fix">更正要点：${esc(q.fix)}</div>` : '';
       return `<div class="reviewItem ${r.submitted ? '' : 'reviewItem--blank'}">
@@ -582,7 +659,9 @@
       }
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (state.quiz.list[state.quiz.idx].type === 'multi' && !rec.submitted) submitAnswer();
+        const q = state.quiz.list[state.quiz.idx];
+        if (q.type === 'short' && !rec.revealed) revealShort();
+        else if (q.type === 'multi' && !rec.submitted) submitAnswer();
         else go(1);
       } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
@@ -590,7 +669,7 @@
   }
 
   // 默认题库：注册表中第一个已随页面加载好数据的题库
-  const initial = Object.keys(BANKS).find((k) => bankOf(k)) || null;
+  const initial = Object.keys(BANKS).find((k) => readyBank(k)) || null;
   if (!initial) {
     document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">题库数据加载失败，请强制刷新页面（Ctrl+F5 / 长按刷新）后重试。</p>';
     return;
