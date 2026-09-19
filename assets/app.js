@@ -5,7 +5,7 @@
   'use strict';
 
   // 资源版本号：改动资源时递增，避免页面与脚本出现新旧混用的缓存问题
-  const VER = '9';
+  const VER = '10';
 
   // 题库注册表：首个随页面加载，其余在切换时按需拉取，避免多余流量
   // merge 表示「总题库」由其它题库在运行时合并而成，不额外占用流量
@@ -86,6 +86,42 @@
   /* ---------------------------- 设置页 ---------------------------- */
   const pool = () => ALL.filter((q) => state.types.has(q.type));
   const poolSize = () => pool().length;
+
+  // 抽题：按题型配比抽取，保证每种已选题型都会出现
+  // （否则像简答题这种占比很低的题型，纯随机很容易一道都抽不到）
+  function pickQuestions(n) {
+    const groups = TYPE_ORDER
+      .filter((t) => state.types.has(t))
+      .map((t) => ALL.filter((q) => q.type === t))
+      .filter((g) => g.length);
+    const total = groups.reduce((s, g) => s + g.length, 0);
+    if (!groups.length || !total) return [];
+    n = Math.min(n, total);
+
+    // 题量比题型数还少：随机挑 n 种题型各取 1 题
+    if (n <= groups.length) {
+      return shuffle(shuffle(groups).slice(0, n).map((g) => g[Math.floor(Math.random() * g.length)]));
+    }
+
+    // 每种题型先保底 1 题，剩余名额按题量占比逐题分配给占比最低的题型
+    const quota = groups.map(() => 1);
+    let left = n - groups.length;
+    while (left > 0) {
+      let best = -1, bestScore = Infinity;
+      for (let i = 0; i < groups.length; i++) {
+        if (quota[i] >= groups[i].length) continue;
+        const score = quota[i] / groups[i].length;
+        if (score < bestScore) { bestScore = score; best = i; }
+      }
+      if (best < 0) break;
+      quota[best]++;
+      left--;
+    }
+
+    const picked = [];
+    groups.forEach((g, i) => { picked.push(...shuffle(g).slice(0, quota[i])); });
+    return shuffle(picked);
+  }
 
   // 题库按钮按注册表生成，新增题库只需改 BANKS
   function buildBankChips() {
@@ -215,7 +251,7 @@
     $('countInput').value = state.count;
     $('countInput').max = max;
     $('countTip').innerHTML = max
-      ? `将从 <b>${max}</b> 道题中随机抽取 <b>${state.count}</b> 道`
+      ? `从 <b>${max}</b> 道题中抽取 <b>${state.count}</b> 道 · 已选题型均会覆盖`
       : '请至少选择一种题型';
     [...$('quickPick').children].forEach((b) => {
       const v = b.dataset.count;
@@ -230,7 +266,7 @@
 
   /* ---------------------------- 开始答题 ---------------------------- */
   function startQuiz(list) {
-    const picked = list || shuffle(pool()).slice(0, state.count);
+    const picked = list || pickQuestions(state.count);
     if (!picked.length) return;
     state.quiz = {
       list: picked,
